@@ -25,20 +25,20 @@ There are **five** main projects:
 ----| based on centrality measures, find out which VC is the center of the network as of July 2014.  
 ----| filter the data based on the time of relationships(edges) starting.  
 ----| measure the structure of the network based on its K-core value, visualize its core-periphery structure.  
-----| Find out investment growth trend based on average K-core value.
-
+----| Find out investment growth trend based on average K-core value.  
+  
 **Network Analysis (similarity):**   
 --| Data: Movie, box, producers, and key words    
 --| Tasks:  
 ----| clease data, build the network of movies based on shared producers and key words.     
-----| Find out the most similar movies with different similarity measures (Jaccard, cosine).  
-----| Find out corralation between movie box and the similarity measures.
-----| Find out most popualr key-words by total box.
-----| Segment movie based on different egdes, explore collaboration trend between big and small movie companies.
-
-**Prediction Models based on Network:**   
---| Data: Funding Events between VCs and Start-ups    
+----| Find out the most similar movies with different similarity measures (Jaccard, cosine).   
+----| Find out corralation between movie box and the similarity measures.  
+----| Find out most popualr key-words by total box.  
+----| Segment movie based on different egdes, explore collaboration trend between big and small movie companies.  
+  
+**Prediction Models based on Network:**    
+--| Data: Funding Events between VCs and Start-ups     
 --| Tasks:  
-----| Predict the probability of a VC invest in a start-up     
-----| Find out factors influencing the investment decision  
-----| Tuning model based on goodness-of-fit
+----| Predict the probability of a VC invest in a start-up.     
+----| Find out factors influencing the investment decision.  
+----| Tuning model based on goodness-of-fit.   
