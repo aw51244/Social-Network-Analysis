@@ -1,0 +1,196 @@
+---
+title: 'Empirical Exercise #2'
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+### Prepare environment and data
+```{r, message=FALSE, warning=FALSE}
+# call bibraries
+rm(list = ls(all = TRUE))
+library(igraph)
+library(data.table)
+require(matrixcalc)
+
+# load data:
+# install.packages("NetData")
+data(studentnets.S641, package = "NetData")
+
+# reduce to non-zero edges and build a graph object
+s641_full_nonzero_edges = subset(s641_full_data_frame, (social_tie > 0 | task_tie > 0))
+s641_full = graph.data.frame(s641_full_nonzero_edges) 
+
+# create separate graphs for each relationship type based on edge attributes and remove isolates
+s641_social = delete.edges(s641_full, E(s641_full)[get.edge.attribute(s641_full,name = "social_tie")==0])
+s641_social = delete.vertices(s641_social, V(s641_social)[degree(s641_social)==0])
+
+s641_task = delete.edges(s641_full, E(s641_full)[get.edge.attribute(s641_full,name = "task_tie")==0])
+s641_task = delete.vertices(s641_task, V(s641_task)[degree(s641_task)==0])
+
+```
+# Q1
+## Generate centrality measures
+```{r}
+getNetStats=function(net)
+{
+  indegree = degree(net, mode = "in")
+  outdegree = degree(net, mode = "out")
+  close = closeness(net, mode = "all")
+  betw = betweenness(net)
+  evc = evcent(as.undirected(net, mode = "collapse"))
+  id=V(net)$name
+  stats=as.data.table(list(id = id, indegree = indegree, outdegree = outdegree,
+                           close = close, betw = betw, evc = evc$vector))
+  return(stats)
+}
+
+(netstats_task = getNetStats(s641_task))
+```
+## Compute correlation to socilizing net
+```{r}
+# Get the same for socializing network
+netstats_social = getNetStats(s641_social)
+
+#find the intersect of both net players
+both_in <- intersect(netstats_social$id,netstats_task$id)
+stat_task_in <- netstats_task[order(id)][id %in% both_in]
+stat_social_in <- netstats_social[order(id)][id %in% both_in]
+
+# compute correlations:
+cor_indegree = cor(stat_social_in$indegree, stat_task_in$indegree)
+cor_outdegree = cor(stat_social_in$outdegree, stat_task_in$outdegree)
+cor_close = cor(stat_social_in$close, stat_task_in$close)
+cor_betw = cor(stat_social_in$betw, stat_task_in$betw)
+cor_evc = cor(stat_social_in$evc, stat_task_in$evc)
+as.data.table(list("indegree cor" = cor_indegree, 
+                   "outdegree cor" = cor_outdegree, 
+                   "closeness cor" = cor_close,
+                   "betw cor" = cor_betw, 
+                   "ecv cor" = cor_evc))
+```
+Closeness is the measure in the task network that is most closely related to that in the socializing network. Print the plots to see waht is happening.
+```{r}
+plot(s641_task, layout=layout.fruchterman.reingold, edge.arrow.size=.5)
+```
+And, print out the socializing network:
+```{r}
+plot(s641_social, layout=layout.fruchterman.reingold, edge.arrow.size=.5)
+```
+The two plot have different shape, yet they both has 22 as some kind of centre of the net, and 4 and 8 as "outliers". So the two network can be related to each other. Meanwhile, since more relationship in the task network are mutural, the correlation of two in-degree tend to be low.
+
+# Q2
+### make edge attribute "is_strong" indicating strong/weak
+```{r}
+# Assume that if a strong tie exist in either net, the tie is strong in the full net.
+# find out strong ties based on mean
+strong <- (E(s641_full)$social_tie >= mean(E(s641_full)$social_tie[E(s641_full)$social_tie>0])
+           | E(s641_full)$task_tie >= mean(E(s641_full)$task_tie[E(s641_full)$task_tie>0]))
+s641_full = set_edge_attr(s641_full, name = "is_strong_mean", value = strong)
+
+# find out strong ties based on median
+strong2 <- (E(s641_full)$social_tie >= median(E(s641_full)$social_tie[E(s641_full)$social_tie>0])
+            | E(s641_full)$task_tie >= median(E(s641_full)$task_tie[E(s641_full)$task_tie>0]))
+s641_full = set_edge_attr(s641_full, name = "is_strong_med", value = strong2)
+
+# undirect the graph.
+s641_undi <- as.undirected(s641_full, mode = "collapse", edge.attr.comb = "max")
+
+```
+### plot the full net for mean based strong/weak
+```{r}
+# use color to differetiate strong and weak ties
+colrange = rainbow(2, start = 0.5, end = 0.7)
+E(s641_undi)$color = colrange[E(s641_undi)$is_strong_mean+1]
+# plot the full net for mean based strong/weak
+plot.igraph(s641_undi, layout=layout.fruchterman.reingold, edge.arrow.size=.3)
+```
+### plot the full net for median based strong/weak
+```{r}
+# plot the full net for median based strong/weak
+colrange = rainbow(2, start = 0.5, end = 0.7)
+E(s641_undi)$color = colrange[E(s641_undi)$is_strong_med+1]
+# plot the full net
+plot.igraph(s641_undi, layout=layout.fruchterman.reingold, edge.arrow.size=.3)
+```
+### Count the number of pair of vertices that have a commen strong-tie friends but do not connected.
+The question of whether a vertice satisfies the Strong Triadic Closure is that if two other vertices i and j are connected by a strong tie throng this vertice (have no zero in adj_mx_strong^2[i,j]), and not derectely connected (have zero in adj_mx_all).
+Check the mean based strong/weak net first, the loop should output the number of pairs that have a commen strong-tie friends but do not connected:
+```{r}
+# generate two adjacency matrixes, one of all ties, one of only strong ties.
+# all ties
+adj_mx_all <- as.matrix(as_adjacency_matrix(s641_undi))
+# only strong ties
+adj_mx_strong_mean <- as.matrix(as_adjacency_matrix(
+  delete.edges(s641_undi, E(s641_undi)[E(s641_undi)$is_strong_mean==0])))
+
+not_satisfy_mean <- 0
+for (i in 1:nrow(adj_mx_all)){
+  for (j in 1:ncol(adj_mx_all)){
+    if (i != j
+        & matrix.power(adj_mx_strong_mean,2)[i,j]>0 
+        & adj_mx_all[i,j] ==0)
+      not_satisfy_mean <- not_satisfy_mean + 1/2
+  }
+}
+not_satisfy_mean
+```
+Since 17 pairs of unconnected vertices with commen strong relatives, this plot does not satisfy Strong Triadic Closure.  
+
+Then check the median based strong/weak net, the loop should output the number of pairs that have a commen strong-tie friends but do not connected:
+```{r}
+adj_mx_strong_med <- as.matrix(as_adjacency_matrix(
+  delete.edges(s641_undi, E(s641_undi)[E(s641_undi)$is_strong_med==0])))
+
+not_satisfy_med <- 0
+for (i in 1:nrow(adj_mx_all)){
+  for (j in 1:ncol(adj_mx_all)){
+    if (i != j
+        & matrix.power(adj_mx_strong_med,2)[i,j]>0 
+        & adj_mx_all[i,j] ==0)
+      not_satisfy_med <- not_satisfy_med + 1/2
+  }
+}
+not_satisfy_med
+```
+Since a lot more pairs of unconnected vertices with commen strong relatives, this plot does not satisfy Strong Triadic Closure either.   
+Maybe this is just the beginning of the semester, the students still need some time to be well connected with each other.
+# Q3
+## Calculate the edge-level betweeness
+```{r}
+btw_typ <- data.table(btw=edge_betweenness(s641_undi),strong_mean=E(s641_undi)$is_strong_mean,strong_med=E(s641_undi)$is_strong_med)
+(btw_typ <- btw_typ[order(-btw)])
+```
+Since the tale is descendently ordered with btw, we can tell that if we use mean of creterion, the edges with high betweeness tend to be strong ties.   
+```{r}
+# find out mean betweenness of strong/weak edges bases on mean
+btw_typ[,.(mean_btw =mean(btw)), by = .(strong_mean)]
+```
+
+```{r}
+# find out mean betweenness of strong/weak edges bases on median
+btw_typ[,.(mean_btw = mean(btw)), by = .(strong_med)]
+```
+```{r}
+cor(btw_typ)
+```
+But after looking into mean betweenness and the correlation, it becomes hard to tell. It seems that if we use mean to defferentiate strong/weak ties, the strongness of egdes are inversely correlated with betweenness, and the mean indecates that generally weak ties have higher betweenness. However, if we use median to defferentiate strong/weak ties, the strong ties have higher betweenness, which, in this case, makes more sense to me. because according to the plot, there is only one big structure in the group, and no "gatekeepers".  
+
+# Q4
+## compute pairs of nodes do not have walks between one another
+Pairs of nodes do not have walks between one another, is pairs that do not have walkes of any steps between one another. The min step pairs can walk between is 1, the max is n-1, so I generate a adjecency matrix, and add up it with is 2nd, 3rd, ... (n-1)th power, and count all the 0s in the sum matrix.
+```{r}
+# generate an adjacency matrix
+adj_mx <- as.matrix(as_adjacency_matrix(s641_full))
+
+# compute the total number of different step route between vertices
+# by adding up all possible power of adjacency matrix.
+# the max power is n-1, when n is the number of vertices
+
+sum_pr_mx = adj_mx
+for (i in 2:(nrow(adj_mx)-1)){
+  sum_pr_mx = sum_pr_mx + matrix.power(adj_mx,i)
+}
+sum(sum_pr_mx==0)/2
+```
+
