@@ -1,10 +1,10 @@
+# import all libraries
 library(igraph)
 library(data.table)
 library(stats)
 mydata = fread(file="sample_generated_network.csv", header = TRUE)
 # Load in the data.
 colnames(mydata) = gsub("To begin, please select your name.", "student_name", colnames(mydata))
-
 
 # Divide the data into trust data and advice data.
 TrustDT <- mydata[,1:(ncol(mydata) - 5)]
