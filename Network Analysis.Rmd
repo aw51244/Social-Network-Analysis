@@ -29,7 +29,7 @@ s641_task = delete.edges(s641_full, E(s641_full)[get.edge.attribute(s641_full,na
 s641_task = delete.vertices(s641_task, V(s641_task)[degree(s641_task)==0])
 
 ```
-# Q1
+
 ## Generate centrality measures
 ```{r}
 getNetStats=function(net)
@@ -79,7 +79,7 @@ plot(s641_social, layout=layout.fruchterman.reingold, edge.arrow.size=.5)
 ```
 The two plot have different shape, yet they both has 22 as some kind of centre of the net, and 4 and 8 as "outliers". So the two network can be related to each other. Meanwhile, since more relationship in the task network are mutural, the correlation of two in-degree tend to be low.
 
-# Q2
+
 ### make edge attribute "is_strong" indicating strong/weak
 ```{r}
 # Assume that if a strong tie exist in either net, the tie is strong in the full net.
@@ -155,7 +155,7 @@ not_satisfy_med
 ```
 Since a lot more pairs of unconnected vertices with commen strong relatives, this plot does not satisfy Strong Triadic Closure either.   
 Maybe this is just the beginning of the semester, the students still need some time to be well connected with each other.
-# Q3
+
 ## Calculate the edge-level betweeness
 ```{r}
 btw_typ <- data.table(btw=edge_betweenness(s641_undi),strong_mean=E(s641_undi)$is_strong_mean,strong_med=E(s641_undi)$is_strong_med)
@@ -176,7 +176,6 @@ cor(btw_typ)
 ```
 But after looking into mean betweenness and the correlation, it becomes hard to tell. It seems that if we use mean to defferentiate strong/weak ties, the strongness of egdes are inversely correlated with betweenness, and the mean indecates that generally weak ties have higher betweenness. However, if we use median to defferentiate strong/weak ties, the strong ties have higher betweenness, which, in this case, makes more sense to me. because according to the plot, there is only one big structure in the group, and no "gatekeepers".  
 
-# Q4
 ## compute pairs of nodes do not have walks between one another
 Pairs of nodes do not have walks between one another, is pairs that do not have walkes of any steps between one another. The min step pairs can walk between is 1, the max is n-1, so I generate a adjecency matrix, and add up it with is 2nd, 3rd, ... (n-1)th power, and count all the 0s in the sum matrix.
 ```{r}
