@@ -14,9 +14,9 @@ There are **five** main projects:
 **Network Analysis (vertices and deges):**   
 --| Data: teamwork and social interaction data of high-shcool students  
 --| Tasks:   
-----| comput centrality measures (indegree, outdegree, undirected closeness, betweenness, and eigenvector centrality) for each individual vertice.
-----| merge two networks, find out correlations between different statistics for each individual vertice between different networks.
-----| Define strong/weak ties between vertices based on interation frequency, calculate the edge-level betweeness
+----| comput centrality measures (indegree, outdegree, undirected closeness, betweenness, and eigenvector centrality) for each individual vertice.  
+----| merge two networks, find out correlations between different statistics for each individual vertice between different networks.  
+----| Define strong/weak ties between vertices based on interation frequency, calculate the edge-level betweeness.  
 
 **Network Analysis (network structure):**   
 --| Data: Funding Events between VCs and Start-ups  
